@@ -1,0 +1,3 @@
+Medical Dashboard build artifact
+Built at: 2026-04-08T20:04:02.444Z
+Run with: node src/server.js (from project root or copied artifact)

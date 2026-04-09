@@ -1,0 +1,17 @@
+{
+  "name": "medical-dashboard",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Clinical analytics dashboard over AllegroGraph SPARQL endpoint",
+  "main": "src/server.js",
+  "scripts": {
+    "build": "node scripts/build.js",
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2"
+  }
+}
