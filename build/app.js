@@ -78,6 +78,13 @@ const QUERY_OVERVIEW = {
   Q12: { nom: 'Detection Haut Risque', explication: 'Detecte des profils cliniques et moleculaires a risque eleve.' }
 };
 
+const OFFLINE_QUERY_ITEMS = Object.entries(QUERY_OVERVIEW).map(([id, info]) => ({
+  id,
+  title: info.nom,
+  category: 'Catalogue local (API indisponible)',
+  sparql: ''
+}));
+
 const MEDICAL_GLOSSARY = [
   { terme: 'Mutation genique', definition: 'Modification de la sequence ADN d un gene. Certaines mutations peuvent influencer le comportement tumoral.' },
   { terme: 'Expression genique', definition: 'Niveau d activite d un gene, mesure ici via des z-scores d expression.' },
@@ -460,18 +467,25 @@ function App() {
   useEffect(() => {
     async function bootstrap() {
       try {
-        const [healthRes, listRes] = await Promise.all([
-          fetchJson('/api/health'),
-          fetchJson('/api/analytics')
-        ]);
+        const healthPromise = fetchJson('/api/health').catch((e) => ({ ok: false, error: e.message }));
+        const listPromise = fetchJson('/api/analytics').catch((e) => ({ items: OFFLINE_QUERY_ITEMS, error: e.message }));
 
-        setHealth({ loading: false, ...healthRes });
-        setQueries(listRes.items || []);
-        if ((listRes.items || []).length > 0) {
-          setSelectedId(listRes.items[0].id);
+        const [healthRes, listRes] = await Promise.all([healthPromise, listPromise]);
+
+        const items = listRes.items || [];
+        const healthError = healthRes?.error || '';
+        const listError = listRes?.error || '';
+        const mergedError = [healthError, listError].filter(Boolean).join(' | ');
+
+        setHealth({ loading: false, ...healthRes, error: mergedError || healthError || listError });
+        setQueries(items);
+        if (items.length > 0) {
+          setSelectedId(items[0].id);
         }
       } catch (e) {
         setHealth({ loading: false, ok: false, error: e.message });
+        setQueries(OFFLINE_QUERY_ITEMS);
+        setSelectedId(OFFLINE_QUERY_ITEMS[0]?.id || null);
       }
     }
     bootstrap();
