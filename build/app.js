@@ -99,6 +99,33 @@ function toNumber(value) {
   return Number.isFinite(num) ? num : null;
 }
 
+const API_BASE = String(window.API_BASE_URL || '').replace(/\/+$/, '');
+
+function apiUrl(path) {
+  const normalizedPath = String(path || '').startsWith('/') ? String(path || '') : `/${String(path || '')}`;
+  return API_BASE ? `${API_BASE}${normalizedPath}` : normalizedPath;
+}
+
+async function fetchJson(path) {
+  const response = await fetch(apiUrl(path));
+  const contentType = String(response.headers.get('content-type') || '').toLowerCase();
+  const bodyText = await response.text();
+
+  if (!response.ok) {
+    throw new Error(`HTTP ${response.status} on ${apiUrl(path)}: ${bodyText.slice(0, 120)}`);
+  }
+
+  if (!contentType.includes('application/json')) {
+    throw new Error(`Expected JSON from ${apiUrl(path)} but got ${contentType || 'unknown content-type'}`);
+  }
+
+  try {
+    return JSON.parse(bodyText);
+  } catch {
+    throw new Error(`Invalid JSON from ${apiUrl(path)}: ${bodyText.slice(0, 120)}`);
+  }
+}
+
 function niceLabel(label) {
   return String(label || '')
     .replace(/([a-z])([A-Z])/g, '$1 $2')
@@ -434,8 +461,8 @@ function App() {
     async function bootstrap() {
       try {
         const [healthRes, listRes] = await Promise.all([
-          fetch('/api/health').then((r) => r.json()),
-          fetch('/api/analytics').then((r) => r.json())
+          fetchJson('/api/health'),
+          fetchJson('/api/analytics')
         ]);
 
         setHealth({ loading: false, ...healthRes });
@@ -465,7 +492,7 @@ function App() {
     setResult(null);
 
     try {
-      const data = await fetch(`/api/analytics/${selectedId}`).then((r) => r.json());
+      const data = await fetchJson(`/api/analytics/${selectedId}`);
       if (data.error) {
         throw new Error(data.error);
       }
